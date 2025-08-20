@@ -1,0 +1,4 @@
+This is to test the release note changes
+
+Release 1
+Release 2
