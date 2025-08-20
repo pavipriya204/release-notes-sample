@@ -1,0 +1,44 @@
+trigger:
+  - main
+
+pool:
+  vmImage: 'windows-latest'
+
+steps:
+  # Step 1: Checkout code
+  - checkout: self
+
+  # Step 2: Build (example for .NET, adjust as needed)
+  - task: UseDotNet@2
+    inputs:
+      packageType: 'sdk'
+      version: '8.x'
+      installationPath: $(Agent.ToolsDirectory)/dotnet
+
+  - script: dotnet build
+    displayName: 'Build Project'
+
+  # Step 3: Generate Release Notes
+  - task: GenerateReleaseNotes@5
+    displayName: 'Generate Release Notes'
+    inputs:
+      outputfile: '$(Build.ArtifactStagingDirectory)/release-notes.md'
+      templateLocation: 'InLine'
+      inlinetemplate: |
+        # Release Notes for $(Build.BuildNumber)
+        ## Commits
+        {{#commits}}
+        - **{{this.committer}}**: {{this.message}}
+        {{/commits}}
+        ## Work Items
+        {{#workItems}}
+        - **{{this.id}}**: {{this.fields['System.Title']}}
+        {{/workItems}}
+
+  # Step 4: Publish Release Notes as Artifact
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Release Notes Artifact'
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)/release-notes.md'
+      ArtifactName: 'ReleaseNotes'
+      publishLocation: 'Container'
